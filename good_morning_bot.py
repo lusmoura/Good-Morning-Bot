@@ -131,7 +131,6 @@ class TelegramBot:
     def read_from_db(self, query):
         conn = psycopg2.connect(self.DB_URL, sslmode='require', password=self.DB_PASSWORD)
         user_data = pd.read_sql(query, conn)
-        print(user_data)
         return user_data.to_dict('records')[0]
 
     def subscribe(self, update, context):
@@ -140,8 +139,6 @@ class TelegramBot:
         self.write_to_db(query)
         text = 'Done! You\'ll receive a daily good morning message!'
         context.bot.send_message(chat_id=chat_id, text=text)
-        users = self.read_from_db('''SELECT * FROM users''')
-        print(users)
     
     def unsubscribe(self, update, context):
         chat_id = update.message.chat_id
@@ -149,11 +146,9 @@ class TelegramBot:
         self.write_to_db(query)
         text = 'Okay! No more good morning messages for you =('
         context.bot.send_message(chat_id=chat_id, text=text)
-        users = self.read_from_db('''SELECT * FROM users''')
-        print(users)
 
     def send_random_message(self, context):
-        print('Sending scheduled message')
+        logger.info('Sending scheduled message')
         users = self.read_from_db('''SELECT * FROM users''')
         
         tone = random.choice(self.tones)
@@ -170,7 +165,6 @@ class TelegramBot:
         query.edit_message_text(text=f"Selected option: {tone}")
         text = self.get_text(tone)
         context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
 
     def unknown(self, update, context):
         logger.info('Unknown')
