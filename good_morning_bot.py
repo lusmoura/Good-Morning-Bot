@@ -139,6 +139,7 @@ class TelegramBot:
         logger.warning('Update "%s" caused error "%s"', update, context.error)
 
     def run(self) -> None:
+        logger.info('Starting')
         self.co = cohere.Client(os.getenv('COHERE_API_KEY'))
         updater = Updater(token=os.getenv('TELEGRAM_API_KEY'), use_context=True)
         dispatcher = updater.dispatcher
