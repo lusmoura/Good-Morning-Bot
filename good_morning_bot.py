@@ -3,7 +3,6 @@ import cohere
 from dotenv import load_dotenv
 
 from telegram.ext import *
-from telegram import ParseMode
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 class TelegramBot:
@@ -128,7 +127,7 @@ class TelegramBot:
         callback_handler = CallbackQueryHandler(self.query_handler)
         dispatcher.add_handler(callback_handler)
 
-        updater.start_polling()
+        updater.start_polling(timeout=600)
         updater.idle()
 
 if __name__ == '__main__':
