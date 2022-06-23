@@ -1,1 +1,1 @@
-python good_morning_bot.py
+web: python3 good_morning_bot.py
