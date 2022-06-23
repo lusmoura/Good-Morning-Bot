@@ -1,6 +1,5 @@
 import os
 import pytz
-# import redis
 import random 
 import cohere
 from datetime import time
@@ -15,6 +14,8 @@ class TelegramBot:
 
     def __init__(self) -> None:
         load_dotenv()
+        self.PORT = int(os.environ.get('PORT', 5000))
+
         # self.db = redis.from_url('your_redis_db_url')
     
     def start(self, update, context):
@@ -152,7 +153,10 @@ class TelegramBot:
 
         # job_queue.run_daily(self.send_random_message, time=time(hour=16, minute=24, second=00, tzinfo=pytz.timezone('America/Sao_Paulo')))
 
-        updater.start_polling(timeout=6000)
+        updater.start_webhook(listen="0.0.0.0",
+                          port=int(self.PORT),
+                          url_path=os.getenv('TELEGRAM_API_KEY'))
+        updater.bot.setWebhook('https://cohere-good-morning-bot.herokuapp.com/' + os.getenv('TELEGRAM_API_KEY'))
         updater.idle()
 
 if __name__ == '__main__':
