@@ -2,12 +2,17 @@ import os
 import pytz
 import random 
 import cohere
+import logging
 from datetime import time
 from dotenv import load_dotenv
 from pytz import timezone
 
 from telegram.ext import *
 from telegram import Chat, InlineKeyboardButton, InlineKeyboardMarkup
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class TelegramBot:
     tones = ['Relaxed', 'Happy', 'Enthusiastic', 'Thoughtful', 'Inspirational', 'Romantic', 'Religious', 'Sad', 'Depressive', 'Angry']
@@ -130,6 +135,9 @@ class TelegramBot:
         text = "Sorry, I didn\'t get it =(\n Try /help for more info."
         context.bot.send_message(chat_id=update.message.chat_id, text=text)
 
+    def error(self, update, context):
+        logger.warning('Update "%s" caused error "%s"', update, context.error)
+
     def run(self) -> None:
         self.co = cohere.Client(os.getenv('COHERE_API_KEY'))
         updater = Updater(token=os.getenv('TELEGRAM_API_KEY'), use_context=True)
@@ -151,6 +159,8 @@ class TelegramBot:
         callback_handler = CallbackQueryHandler(self.query_handler)
         dispatcher.add_handler(callback_handler)
 
+        dispatcher.add_error_handler(self.error)
+
         # job_queue.run_daily(self.send_random_message, time=time(hour=16, minute=24, second=00, tzinfo=pytz.timezone('America/Sao_Paulo')))
 
         updater.start_webhook(listen="0.0.0.0",
@@ -161,4 +171,7 @@ class TelegramBot:
 
 if __name__ == '__main__':
     bot = TelegramBot()
-    bot.run()
+    try:
+        bot.run()
+    except Exception as e:
+        logging.info(e.args)
