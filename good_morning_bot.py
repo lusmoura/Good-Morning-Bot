@@ -140,8 +140,8 @@ class TelegramBot:
 
     def run(self) -> None:
         logger.info('Starting')
-        self.co = cohere.Client(os.getenv('COHERE_API_KEY'))
-        updater = Updater(token=os.getenv('TELEGRAM_API_KEY'), use_context=True)
+        self.co = cohere.Client('3ypb1tT7mDN7Or0SxuDOQoWJCOLL1HmHzoqQsdUo')
+        updater = Updater(token='5483567441:AAEEko2puBw6PhjaB5gXZdrUWk9Ylk_0SNk', use_context=True)
         dispatcher = updater.dispatcher
         job_queue = updater.job_queue
 
@@ -166,8 +166,8 @@ class TelegramBot:
 
         updater.start_webhook(listen="0.0.0.0",
                           port=int(self.PORT),
-                          url_path=os.getenv('TELEGRAM_API_KEY'))
-        updater.bot.setWebhook('https://cohere-good-morning-bot.herokuapp.com/' + os.getenv('TELEGRAM_API_KEY'))
+                          url_path='5483567441:AAEEko2puBw6PhjaB5gXZdrUWk9Ylk_0SNk')
+        updater.bot.setWebhook('https://powerful-escarpment-89152.herokuapp.com/' + '5483567441:AAEEko2puBw6PhjaB5gXZdrUWk9Ylk_0SNk')
         updater.idle()
 
 if __name__ == '__main__':
