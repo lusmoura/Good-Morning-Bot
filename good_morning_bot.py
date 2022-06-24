@@ -204,7 +204,7 @@ class TelegramBot:
 
         dispatcher.add_error_handler(self.error)
 
-        job_queue.run_daily(self.send_random_message, time=time(hour=16, minute=24, second=00, tzinfo=timezone('America/Sao_Paulo')))
+        job_queue.run_daily(self.send_random_message, time=time(hour=8, minute=00, second=00, tzinfo=timezone('America/Sao_Paulo')))
     
         updater.start_webhook(
             listen="0.0.0.0",
