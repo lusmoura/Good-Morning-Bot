@@ -18,6 +18,8 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+GET, FEEDBACK = range(2)
+
 class TelegramBot:
     tones = ['Relaxed', 'Happy', 'Enthusiastic', 'Thoughtful', 'Inspirational', 'Romantic', 'Religious', 'Sad', 'Depressive', 'Angry']
 
@@ -27,6 +29,8 @@ class TelegramBot:
         self.DB_URL = os.environ.get('DB_URL')
         self.DB_PASSWORD = os.environ.get('DB_PASSWORD')
         query = 'CREATE TABLE IF NOT EXISTS users (id integer);'
+        self.write_to_db(query)
+        query = 'CREATE TABLE IF NOT EXISTS messages (message varchar(500) primary key, tone varchar(50));'
         self.write_to_db(query)
 
     def start(self, update, context):
@@ -68,42 +72,25 @@ class TelegramBot:
                                 reply_markup=buttons,
                                 parse_mode='HTML'
                                 )
+        return GET
 
     def get_text(self, tone):
+        query = f'''SELECT * FROM messages WHERE tone = '{tone}';'''
+        result = self.read_from_db(query)
+
+        if len(result) == 0:
+            query = f'''SELECT * FROM messages'''
+            result = self.read_from_db(query)
+
+        prompt = ''
+        for example in result:
+            prompt += f'''Tone: {example['tone']}\nMessage: {example['message']}\n--\n'''
+        prompt += f'Tone: {tone}\nMessage:'
+        print(prompt)
+
         prediction = self.co.generate(
-        model='large',
-        prompt=f'''Tone: Romantic
-        Message: Hello, sweetie. How are you? I really enjoyed our last night together by making a lot of fun. You are indeed amazing. I hope you have a wonderful day today!
-        --
-        Tone: Romantic
-        Message: I really hope you had a good sleep. Please walk up now since my mornings are really incomplete without you. Good morning Jaan!
-        --
-        Tone: Romantic
-        Message: Every morning for me is an opportunity to love, respect, care for you, and make you feel so amazing all day long. Good morning my sweetheart!
-        --
-        Tone: Thoughtful
-        Message: If you have the willpower to win your snooze button, no one can stop you from turning your dreams into reality. Have a great day! Happy Good Morning!
-        --
-        Tone: Inspirational
-        Message: Every morning gives you a new opportunity. You have to just go out grab with full zeal. Keep smiling at the start of this new day. Have a blessed and spectacular good morning.
-        --
-        Tone: Inspirational
-        Message: Never believe in taking motivation and inspiration. Always believe in yourself and make your own way to achieve your goal. Good morning!
-        --
-        Tone: Religous
-        Message: I pray to God this beautiful morning he accepts all your prayers in no time. Have an outstanding day with lots of love!
-        --
-        Tone: Religious
-        Message: Have a blessed morning to you, dear! May you receive strength and power to put up with troubles. May life be joyful and blessed. Good Morning!
-        --
-        Tone: Sad 
-        Message: I have been so sad since morning because I am not with you. I have missed you so much. Good Morning!
-        --
-        Tone: Depressive
-        Message: You are worth the life of a beautiful morning. I miss you so much. Have a sad morning, my love!
-        --
-        Tone: {tone}
-        Message: ''',
+        model='xlarge',
+        prompt=prompt,
         max_tokens=100,
         temperature=0.8,
         k=0,
@@ -127,7 +114,11 @@ class TelegramBot:
     def read_from_db(self, query):
         conn = psycopg2.connect(self.DB_URL, sslmode='require', password=self.DB_PASSWORD)
         user_data = pd.read_sql(query, conn)
-        return user_data.to_dict('records')[0]
+    
+        if len(user_data.to_dict('records')) == 0:
+            return []
+
+        return user_data.to_dict('records')
 
     def subscribe(self, update, context):
         chat_id = update.message.chat_id
@@ -145,7 +136,7 @@ class TelegramBot:
 
     def send_random_message(self, context):
         logger.info('Sending scheduled message')
-        users = self.read_from_db('''SELECT * FROM users''')
+        users = self.read_from_db('''SELECT * FROM users''')[0]
         
         tone = random.choice(self.tones)
         text = self.get_text(tone)
@@ -154,13 +145,42 @@ class TelegramBot:
             context.bot.send_message(chat_id=id, text=f'Here\'s your scheduled message =D\nToday you\'ll get a {tone} message')
             context.bot.send_message(chat_id=id, text=text)
 
-    def query_handler(self, update, context):
+    def query_get_handler(self, update, context):
         query = update.callback_query
         query.answer()
         tone = query.data
+        self.curr_tone = tone
         query.edit_message_text(text=f"Selected option: {tone}")
         text = self.get_text(tone)
+        self.text=text
         context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+        keyboard = [
+            [InlineKeyboardButton("Yes", callback_data="Yes")],
+            [InlineKeyboardButton("No", callback_data="No")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                text='Was this message appropriate to the mood?',
+                                reply_markup=reply_markup,
+                                parse_mode='HTML')
+
+        return FEEDBACK
+
+    def query_feedback_handler(self, update, context):
+        query = update.callback_query
+        query.answer()
+        feedback = query.data
+
+        if feedback == "Yes":
+            text = self.text.replace("'", "\'")
+            query_sql = f'''INSERT INTO messages(message, tone) VALUES ('{text}', '{self.curr_tone}') ON CONFLICT DO NOTHING;'''
+            self.write_to_db(query_sql)
+            query.edit_message_text(text=f"Yay! I\'ll keep on improving")
+        else:
+            query.edit_message_text(text=f"Damn, hope next time I get it right.")
+
+        return ConversationHandler.END
 
     def unknown(self, update, context):
         logger.info('Unknown')
@@ -169,6 +189,9 @@ class TelegramBot:
 
     def error(self, update, context):
         logger.warning('Update "%s" caused error "%s"', update, context.error)
+
+    def cancel(self, update, context):
+        pass
 
     def run(self) -> None:
         logger.info('Starting')
@@ -183,8 +206,14 @@ class TelegramBot:
         help_handler = CommandHandler('help', self.help)
         dispatcher.add_handler(help_handler)
 
-        get_handler = CommandHandler('get', self.get)
-        dispatcher.add_handler(get_handler)
+        conversation_handler = ConversationHandler(
+            entry_points=[CommandHandler('get', self.get)],
+            states={GET: [CallbackQueryHandler(self.query_get_handler)],
+                    FEEDBACK: [CallbackQueryHandler(self.query_feedback_handler)],
+            },
+            fallbacks=[CommandHandler('cancel', self.cancel)]
+        )
+        dispatcher.add_handler(conversation_handler)
 
         subscribe_handler = CommandHandler('subscribe', self.subscribe)
         dispatcher.add_handler(subscribe_handler)
@@ -194,9 +223,6 @@ class TelegramBot:
 
         unknown_handler = MessageHandler(Filters.command, self.unknown)
         dispatcher.add_handler(unknown_handler)
-
-        callback_handler = CallbackQueryHandler(self.query_handler)
-        dispatcher.add_handler(callback_handler)
 
         dispatcher.add_error_handler(self.error)
 
