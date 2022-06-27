@@ -86,7 +86,6 @@ class TelegramBot:
         for example in result:
             prompt += f'''Tone: {example['tone']}\nMessage: {example['message']}\n--\n'''
         prompt += f'Tone: {tone}\nMessage:'
-        print(prompt)
 
         prediction = self.co.generate(
         model='xlarge',
