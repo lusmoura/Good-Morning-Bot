@@ -167,7 +167,7 @@ class TelegramBot:
         feedback = query.data
 
         if feedback == "Yes":
-            text = self.text.replace("'", "\'")
+            text = self.text.replace("'", "''")
             query_sql = f'''INSERT INTO messages(message, tone) VALUES ('{text}', '{self.curr_tone}') ON CONFLICT DO NOTHING;'''
             self.write_to_db(query_sql)
             query.edit_message_text(text=f"Yay! I\'ll keep on improving")
