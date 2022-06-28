@@ -75,12 +75,8 @@ class TelegramBot:
         return GET
 
     def get_text(self, tone):
-        query = f'''SELECT * FROM messages WHERE tone = '{tone}';'''
+        query = f'''SELECT * FROM messages'''
         result = self.read_from_db(query)
-
-        if len(result) == 0:
-            query = f'''SELECT * FROM messages'''
-            result = self.read_from_db(query)
 
         prompt = ''
         for example in result:
