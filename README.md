@@ -30,9 +30,10 @@ To use the bot you can either create a new version and try yourself or just send
 - Unsubscribe: stop receiving daily messages
 
 ## Versions:
-1. Few-shot with hard-coded examples for some of the categories
-2. Few-shot with hard-coded examples for all of the categories
-3. Few-shot using previously generated messages
-4. Few-shot using previously generated messages for each individual tone
-5. Few-shot with feedback from the user
-6. [To Do] Fine tune a model
+1. Large | Few-shot with hard-coded examples for some of the categories
+2. Large | Few-shot with hard-coded examples for all of the categories
+3. Large | Few-shot using previously generated messages
+4. XLarge | Few-shot using previously generated messages
+5. XLarge | Few-shot using previously generated messages for each individual tone
+6. Xlarge | Few-shot with feedback from the user
+7. [To Do] Fine tune a model
