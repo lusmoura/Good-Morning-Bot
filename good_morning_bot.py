@@ -151,8 +151,7 @@ class TelegramBot:
         context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
         keyboard = [
-            [InlineKeyboardButton("Yes", callback_data="Yes")],
-            [InlineKeyboardButton("No", callback_data="No")]
+            [InlineKeyboardButton("Yes", callback_data="Yes"), InlineKeyboardButton("No", callback_data="No")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         context.bot.send_message(chat_id=update.effective_chat.id,
